@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Office Display Carousel</title>
+<style>
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        font-family: system-ui, sans-serif;
+        background: #f8f3ea;
+        overflow: hidden;
+    }
+    .carousel {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+    }
+    .slide {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.6s ease;
+    }
+    .slide.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    .slide iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+    .error-message {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        color: #a33;
+        padding: 2rem;
+        text-align: center;
+    }
+</style>
+</head>
+<body>
+
+<div class="carousel" id="carousel"></div>
+
+<script>
+    // Slides are no longer listed here in code.
+    // To add, remove, or reorder slides, edit manifest.txt
+    // (a plain text file, one filename per line) -
+    // no HTML/JS editing needed.
+
+    const MANIFEST_FILE = "manifest.txt";
+    const AUTOPLAY_DELAY = 10000; // ms between auto-advances
+
+    const carousel = document.getElementById('carousel');
+
+    // Tracks whether each slide file currently has content to show.
+    // A slide is assumed to have content (true) unless it explicitly
+    // tells us otherwise via postMessage - this keeps existing slides
+    // working exactly as before, with no changes needed on their part.
+    // Only slides that opt in (like safetyNotice.html) can be skipped.
+    const slideHasContent = {};
+
+    window.addEventListener('message', (event) => {
+        let data = event.data;
+        if (typeof data === 'string') {
+            try { data = JSON.parse(data); } catch (e) { return; }
+        }
+        if (!data || data.type !== 'carousel-slide-status' || !data.filename) return;
+
+        slideHasContent[data.filename] = !!data.hasContent;
+        handlePossibleSkip(data.filename);
+    });
+
+    async function loadSlideFiles() {
+        try {
+            const response = await fetch(MANIFEST_FILE, { cache: 'no-store' });
+            if (!response.ok) throw new Error('manifest.txt not found');
+            const text = await response.text();
+            return text
+                .split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0 && !line.startsWith('#'));
+        } catch (err) {
+            console.error('Could not load manifest.txt:', err);
+            return null;
+        }
+    }
+
+    let slideFiles = [];
+    let slides = [];
+    let current = 0;
+
+    function buildSlides(files) {
+        slideFiles = files;
+
+        files.forEach((file, i) => {
+            const slide = document.createElement('div');
+            slide.className = 'slide' + (i === 0 ? ' active' : '');
+
+            const iframe = document.createElement('iframe');
+            iframe.src = file;
+            iframe.title = file;
+
+            slide.appendChild(iframe);
+            carousel.appendChild(slide);
+        });
+
+        slides = document.querySelectorAll('.slide');
+
+        if (slides.length > 1) {
+            setInterval(nextSlide, AUTOPLAY_DELAY);
+        }
+    }
+
+    function showSlide(index) {
+        const total = slides.length;
+        slides[current].classList.remove('active');
+        current = (index + total) % total;
+        slides[current].classList.add('active');
+    }
+
+    function nextSlide() {
+        const total = slideFiles.length;
+        if (total === 0) return;
+
+        // Look for the next slide that has content, trying at most
+        // `total` times so we never loop forever if every slide is
+        // currently empty.
+        for (let attempts = 0; attempts < total; attempts++) {
+            const candidate = (current + 1 + attempts) % total;
+            if (slideHasContent[slideFiles[candidate]] !== false) {
+                showSlide(candidate);
+                return;
+            }
+        }
+        // Every slide is marked empty - just move forward anyway so
+        // the display doesn't freeze on one hidden slide.
+        showSlide(current + 1);
+    }
+
+    function handlePossibleSkip(filename) {
+        if (!slides.length) return;
+        const currentFile = slideFiles[current];
+        // If the slide currently on screen just told us it's empty,
+        // don't wait for the full autoplay delay - advance right away.
+        if (currentFile === filename && slideHasContent[filename] === false) {
+            nextSlide();
+        }
+    }
+
+    function showError(message) {
+        const errDiv = document.createElement('div');
+        errDiv.className = 'error-message';
+        errDiv.textContent = message;
+        carousel.appendChild(errDiv);
+    }
+
+    loadSlideFiles().then(files => {
+        if (!files) {
+            showError(
+                "Couldn't load manifest.txt. If you're opening this file " +
+                "directly by double-clicking it, browsers block that for " +
+                "security reasons - this page needs to be served by a web " +
+                "server (even a simple local one) for manifest.txt to load."
+            );
+            return;
+        }
+        if (files.length === 0) {
+            showError("manifest.txt has no slides listed yet. Add a filename to it.");
+            return;
+        }
+        buildSlides(files);
+    });
+</script>
+
+</body>
+</html>

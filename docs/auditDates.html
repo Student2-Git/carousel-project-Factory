@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Dates</title>
+
+    <script type="module" src="https://pyscript.net/releases/2024.3.1/core.js"></script>
+
+    <style>
+        body { height: 100%; overflow-y: hidden; }
+        p { text-align: center; 
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; 
+            font-weight:bold; }    
+    </style>
+</head>
+<body>
+    <div id="auditContent">
+        <p style="font-size:45px;">Upcoming Audits!</p>
+        <div style="height:115px;"></div>
+
+        <p style="font-size:40px;">
+            <span id="labelTag"></span> Days Until Next Audit
+        </p>
+    </div>
+
+    <div style="height:220px;"></div>
+    <p id="noAudits" style="display:none; font-size:45px;">No Upcoming Audits</p>
+
+    <py-config src="pyscript.toml"></py-config>
+
+    <script type="py">
+        import pandas as pd
+        from datetime import date
+        from pyscript import document
+
+        try:
+            df = pd.read_excel("testbirthdays.xlsx", engine="openpyxl")
+
+            today = date.today()
+            df['Audit Date'] = pd.to_datetime(df['Audit Date'])
+            timeUntil = None
+
+            for auditDate in df['Audit Date']:
+                if pd.notna(auditDate):
+                    timeUntil = auditDate.date() - today
+
+            if timeUntil:
+                document.getElementById("labelTag").innerText = str(timeUntil.days)
+            else:
+                document.getElementById("auditContent").style.display = "none"
+                document.getElementById("noAudits").style.display = "block"
+
+        except Exception as e:
+            document.getElementById("auditContent").style.display = "none"
+            document.getElementById("noAudits").style.display = "block"
+            document.getElementById("noAudits").innerText = f"Error: {e}"
+    </script>
+</body>
+</html>

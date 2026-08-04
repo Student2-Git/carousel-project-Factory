@@ -1,0 +1,4 @@
+packages = ["pandas", "openpyxl"]
+
+[[fetch]]
+files = ["testbirthdays.xlsx"]

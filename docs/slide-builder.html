@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Slide Builder</title>
+<style>
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        font-family: system-ui, sans-serif;
+        background: #f3ede1;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        padding: 3rem 1rem;
+    }
+    .wrap {
+        width: 100%;
+        max-width: 900px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+    }
+    @media (max-width: 760px) {
+        .wrap { grid-template-columns: 1fr; }
+    }
+    h1 {
+        font-size: 1.4rem;
+        margin: 0 0 1.5rem 0;
+        grid-column: 1 / -1;
+    }
+    .panel {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #444;
+        margin: 1rem 0 0.35rem 0;
+    }
+    label:first-child { margin-top: 0; }
+    input[type="text"], textarea {
+        width: 100%;
+        padding: 0.6rem 0.7rem;
+        font-size: 1rem;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-family: inherit;
+    }
+    textarea { min-height: 80px; resize: vertical; }
+    .color-row {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+    input[type="color"] {
+        width: 42px;
+        height: 32px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 0;
+    }
+    .filename-row {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+    .filename-row input { flex: 1; }
+    .filename-row span { color: #777; font-size: 0.95rem; }
+    button {
+        margin-top: 1.5rem;
+        width: 100%;
+        padding: 0.8rem;
+        background: #2f6f4f;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    button:hover { background: #275c41; }
+    .preview-panel {
+        display: flex;
+        flex-direction: column;
+    }
+    .preview-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #444;
+        margin-bottom: 0.5rem;
+    }
+    .preview-frame-wrap {
+        flex: 1;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #ddd;
+        min-height: 260px;
+    }
+    iframe#preview {
+        width: 100%;
+        height: 100%;
+        min-height: 260px;
+        border: none;
+        display: block;
+    }
+    .steps {
+        grid-column: 1 / -1;
+        background: #fff8ea;
+        border: 1px solid #eee0b8;
+        border-radius: 10px;
+        padding: 1rem 1.2rem;
+        font-size: 0.9rem;
+        color: #5a4a1e;
+        margin-top: 0.5rem;
+    }
+    .steps ol { margin: 0.4rem 0 0 1.1rem; padding: 0; }
+    .steps li { margin: 0.2rem 0; }
+    code {
+        background: #efe4c0;
+        padding: 0.1rem 0.35rem;
+        border-radius: 4px;
+    }
+</style>
+</head>
+<body>
+<div class="wrap">
+    <h1>🖼️ Carousel Slide Builder</h1>
+
+    <div class="panel">
+        <label for="title">Title</label>
+        <input type="text" id="title" value="Your Title Here" />
+
+        <label for="message">Message</label>
+        <textarea id="message">Your message goes here. Keep it short so it's easy to read from across the room.</textarea>
+
+        <label>Background color</label>
+        <div class="color-row">
+            <input type="color" id="bgColor" value="#f8f3ea" />
+            <span id="bgColorLabel">#f8f3ea</span>
+        </div>
+
+        <label>Title color</label>
+        <div class="color-row">
+            <input type="color" id="titleColor" value="#333333" />
+            <span id="titleColorLabel">#333333</span>
+        </div>
+
+        <label>Message color</label>
+        <div class="color-row">
+            <input type="color" id="textColor" value="#555555" />
+            <span id="textColorLabel">#555555</span>
+        </div>
+
+        <label for="filename">File name (no spaces)</label>
+        <div class="filename-row">
+            <input type="text" id="filename" value="newSlide" />
+            <span>.html</span>
+        </div>
+
+        <button id="downloadBtn">⬇ Download this slide</button>
+    </div>
+
+    <div class="panel preview-panel">
+        <div class="preview-label">Live preview</div>
+        <div class="preview-frame-wrap">
+            <iframe id="preview" title="Slide preview"></iframe>
+        </div>
+    </div>
+
+    <div class="steps">
+        After downloading:
+        <ol>
+            <li>Move the downloaded file into the same folder as <code>carousel project - docs </code>.</li>
+            <li>Open <code>manifest.txt</code> in any text editor.</li>
+            <li>Add the file name on its own new line (e.g. <code>newSlide.html</code>) and save.</li>
+        </ol>
+        That's it — no other editing needed. The carousel picks it up automatically.
+    </div>
+</div>
+
+<script>
+    const titleInput = document.getElementById('title');
+    const messageInput = document.getElementById('message');
+    const bgColor = document.getElementById('bgColor');
+    const titleColor = document.getElementById('titleColor');
+    const textColor = document.getElementById('textColor');
+    const bgColorLabel = document.getElementById('bgColorLabel');
+    const titleColorLabel = document.getElementById('titleColorLabel');
+    const textColorLabel = document.getElementById('textColorLabel');
+    const filenameInput = document.getElementById('filename');
+    const preview = document.getElementById('preview');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function buildSlideHtml() {
+        const title = escapeHtml(titleInput.value || 'Untitled');
+        const message = escapeHtml(messageInput.value || '');
+        return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>${title}</title>
+<style>
+    body {
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-family: system-ui, sans-serif;
+        text-align: center;
+        padding: 2rem;
+        box-sizing: border-box;
+        background: ${bgColor.value};
+    }
+    h1 {
+        font-size: 3rem;
+        margin: 0 0 1rem 0;
+        color: ${titleColor.value};
+    }
+    p {
+        font-size: 1.5rem;
+        margin: 0;
+        max-width: 800px;
+        color: ${textColor.value};
+    }
+</style>
+</head>
+<body>
+    <h1>${title}</h1>
+    <p>${message.replace(/\n/g, '<br>')}</p>
+</body>
+</html>
+`;
+    }
+
+    function updatePreview() {
+        const html = buildSlideHtml();
+        preview.srcdoc = html;
+        bgColorLabel.textContent = bgColor.value;
+        titleColorLabel.textContent = titleColor.value;
+        textColorLabel.textContent = textColor.value;
+    }
+
+    [titleInput, messageInput, bgColor, titleColor, textColor].forEach(el => {
+        el.addEventListener('input', updatePreview);
+    });
+
+    downloadBtn.addEventListener('click', () => {
+        const html = buildSlideHtml();
+        let name = filenameInput.value.trim() || 'newSlide';
+        name = name.replace(/\.html$/i, '').replace(/[^a-zA-Z0-9_-]/g, '');
+        if (!name) name = 'newSlide';
+
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name + '.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+
+    updatePreview();
+</script>
+</body>
+</html>
